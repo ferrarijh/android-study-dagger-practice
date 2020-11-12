@@ -18,9 +18,7 @@ class MainActivity : AppCompatActivity() {
 }
 
 /*
-
     Car
   /     \
 Wheel   Engine
-
  */
