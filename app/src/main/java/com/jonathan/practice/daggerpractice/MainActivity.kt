@@ -2,23 +2,24 @@ package com.jonathan.practice.daggerpractice
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import com.jonathan.practice.daggerpractice.car.Car
+import com.jonathan.practice.daggerpractice.car.EngineWithHpModule
+import javax.inject.Inject
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var mCar: Car
+    @Inject lateinit var mCar: Car
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val component = DaggerCarComponent.create()
-        mCar = component.getCar()
+        val component = DaggerCarComponent.builder()
+            .engineWithHpModule(EngineWithHpModule(100))
+            .build()
+        //mCar = component.getCar()
+
+        component.inject(this)
         mCar.drive()
     }
 }
-
-/*
-    Car
-  /     \
-Wheel   Engine
- */
