@@ -133,7 +133,7 @@ Last, add module to Component Class.
 
 CarComponent.kt:
 ```kotlin
-@Component(modules = [WheelModule.class, PetrolEngineModule::class])    //change to any type of Engine here.
+@Component(modules = [WheelModule::class, PetrolEngineModule::class])    //change to any type of Engine here.
 class CarComponent{
     //...
 }
@@ -179,3 +179,80 @@ class MainActivity: AppCompatActivity(){
     }
 }
 ```
+
+### @Component.Builder + @BindsInstance
+* In the above example `EngineWithHpModule` is instantiated directly and it's too primitive. Let's change it so we can use it as below.
+The example will change `PetrolEngine` so it will have property `horsepower` and `torque`
+
+We want to get `Car` instance as below in `MainActivity`.
+
+MainActivity.kt:
+```kotlin
+class MainActivity: AppCompatActivity(){
+    @Inject lateinit var mCar: Car
+
+    override fun onCreate(savedInstanceState: Bundle?){
+
+        val component = DaggerCarComponent.builder()
+            .horsePower(250)
+            .torque(50)
+            .build()
+    
+        val mCar = component.inject(this)
+        mCar.drive()
+    }
+}
+```
+
+First change PetrolEngine.kt:
+```kotlin
+class PetrolEngine @Inject constructor(@Named("hp")private val hp: Int, @Named("torque")private val torque: Int): Engine{
+    override fun start(){
+        Log.d("", "starting Petrol Engine with: hp=$horsepower, torque=$torque")
+    }
+}
+```
+`@Named` annotation will be used for mapping passed values at runtime.
+
+`PetrolEngineModule` stays the same as:
+```kotlin
+@Module
+abstract class PetrolEngineModule{
+    @Binds
+    abstract fun bindEngine(e: PetrolEngine): Engine
+}
+```
+
+Builder should be configured manually on class `CarComponent` as below.
+
+CarComponent.kt:
+```kotlin
+@Component(modules=[WheelModule::class, PetrolEngineModule::class])
+interface CarComponent{
+    fun getCar(): Car
+    fun inject(activity: MainActivity)
+
+    @Component.Builder
+    interface Builder {
+        @BindsInstance
+        fun horsepower(@Name("hp")hp: Int): Builder
+    
+        @BindsInstance
+        fun torque(@Name("torque")torque: Int): Builder
+
+        fun build(): CarComponent
+    }
+}
+```
+
+Without annotation `@Named` dagger won't know where the provided integer should be injected to between `horsepower` and `torque`
+so below will invoke compile time error.
+```kotlin
+DaggerCarComponent.builder()
+            .horsepower(250)
+            .torque(50)
+            .build()
+```
+
+## Furthermore..
+* If all the `@Provides` methods are static in `@Module` annotated class, make the class abstract - then Dagger won't compile if any methods are non-static.
