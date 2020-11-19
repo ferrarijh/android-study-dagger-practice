@@ -256,3 +256,5 @@ DaggerCarComponent.builder()
 
 ## Furthermore..
 * If all the `@Provides` methods are static in `@Module` annotated class, make the class abstract - then Dagger won't compile if any methods are non-static.
+* Proguard will get rid of all the unnecessary codes created by Dagger when creating apk file.
+* For `@Singleton` to be effective, instances should be created from a single component.
