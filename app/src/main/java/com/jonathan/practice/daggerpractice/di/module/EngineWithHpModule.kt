@@ -1,4 +1,4 @@
-package com.jonathan.practice.daggerpractice.car
+package com.jonathan.practice.daggerpractice.di.module
 
 import com.jonathan.practice.daggerpractice.car.engine.Engine
 import com.jonathan.practice.daggerpractice.car.engine.EngineWithHp

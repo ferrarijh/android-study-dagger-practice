@@ -1,4 +1,4 @@
-package com.jonathan.practice.daggerpractice
+package com.jonathan.practice.daggerpractice.di.module
 
 import com.jonathan.practice.daggerpractice.car.wheel.Rim
 import com.jonathan.practice.daggerpractice.car.wheel.Tire

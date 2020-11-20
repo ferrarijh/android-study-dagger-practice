@@ -1,4 +1,4 @@
-package com.jonathan.practice.daggerpractice
+package com.jonathan.practice.daggerpractice.di.module
 
 import com.jonathan.practice.daggerpractice.car.engine.DieselEngine
 import com.jonathan.practice.daggerpractice.car.engine.Engine
@@ -9,6 +9,8 @@ import dagger.Provides
 @Module
 abstract class DieselEngineModule{
 
-    @Binds
-    abstract fun bindEngine(de: DieselEngine): Engine
+    companion object{
+        @Provides
+        fun bindEngine(de: DieselEngine) = DieselEngine()
+    }
 }

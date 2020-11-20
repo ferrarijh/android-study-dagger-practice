@@ -254,7 +254,201 @@ DaggerCarComponent.builder()
             .build()
 ```
 
+## @Singleton
+* Dependencies annotated `@Singleton` are singleton ONLY throughout the Components instance it's confined to.
+
+Now we add property `DriverJiho` which is singleton to class `Car`. (below)
+
+DriverJiho.kt:
+```kotlin
+@Singleton
+class DriverJiho @Inject constructor(){}
+```
+
+(can't use `object DriverJiho` since constructor is not allowed for kotlin `object)
+
+CarComponent.kt:
+```kotlin
+@Singleton
+@Component
+interface CarComponent //...
+```
+
+MainActivity.kt:
+```kotlin
+val component = DaggerCarComponent.builder()
+    .horsepower(200)
+    .torque(50)
+    .build()
+
+val car1 = component.getCar()
+val car2 = component.getCar()
+
+car1.drive()
+car2.drive()
+```
+From the above `car1` and `car2` shares same `DriverJiho` instance.
+However in the example below two cars do NOT share same `DriverJiho` instance.
+
+MainActivity.kt:
+```kotlin
+val component1 = DaggerCarComponent.builder()
+    .horsepower(200)
+    .torque(50)
+    .build()
+
+val component2 = DaggerCarComponent.builder()
+    .horsepower(200)
+    .torque(50)
+    .build()
+
+val car1 = component1.getCar()
+val car2 = component2.getCar()
+
+car1.drive()
+car2.drive()
+```
+
+Here as mentioned you'll see different `DriverJiho` instances between `car1` and `car2`.
+Also there still is an issue until now - every time Activity is destroyed(e.g. at screen rotation)
+new instances are created which can be wasteful and they're not 'true' singleton.
+The next section explains how to solve the issue by setting custom scopes.
+
+## Custom scopes and Component dependencies
+* In actual development custom scopes are set for different classes and components with annotations.
+
+Now let's set scope for each classes and Components - Application scope & Activity scope.
+In the example instance of `DriverJiho` will last through entire application's life span(`@Singleton`) and instance of
+`Car` will last only through activity's life span(`@MainActivityScope` - custom annotation).
+Before jumping in set MainActivity
+
+1) Create base application class for the app. (Then set `AndroidManifest.xml` to tell Android it's your base app)
+
+BaseApplication.kt:
+```kotlin
+class BaseApplication: Application(){
+    val appComponent by lazy{DaggerAppComponent.create()}   //AppComponent will be created in a moment!
+}
+```
+
+2) Create custom annotation for `MainActivity`'s lifecycle.
+
+MainActivityScope.java:
+```java
+@Scope
+@Documented
+@Retention(RUNTIME)
+public @interface MainActivityScope{}
+```
+
+3) Create interface `AppComponent`(responsible for providing `DriverJiho`) and set scope annotation for each Component interfaces.
+
+AppComponent.kt:
+```kotlin
+@Singleton
+@Component(modules=[])  //DriverJihoModule will be created in a moment!
+interface AppComponent{
+    fun getDriver(): DriverJiho
+}
+```
+
+`AppComponent` provides `DriverJiho` so `CarComponent` is dependent on `AppComponent`.
+To inject instance of `AppComponent` in `CarComponent` in runtime add `appComponent()` method in `CarComponent.Builder` and 
+dependency as below.
+
+CarComponent.kt:
+```kotlin
+@MainActivityScope
+@Component(
+    dependencies=[AppComponent::class],     //tell dagger CarComponent is dependent on AppComponent to acquire instance of DriverJiho
+    modules=[WheelModule::class,PetrolEngineModule::class]
+)
+interface CarComponent{
+    //...
+    @Component.Builder
+    interface Builder{
+        //...
+        fun appComponent(appComponent: AppComponent): Builder   //inject AppComponent
+
+        fun build(): CarComponent
+    }
+}
+```
+
+4) Create Module providing `DriverJiho` instance.
+
+First modify `DriverJiho` class and use `@Provides` on `DriverJihoModule` - assume we can't inject on its constructor.
+
+DriverJiho.kt:
+```kotlin
+class DriverJiho{
+    //let's say we don't own this class to use @Inject to its constructor.
+}
+```
+
+Then create `DriverJihoModule`.
+
+DriverJihoModule.kt:
+```kotlin
+@Module
+abstract class DriverJihoModule{
+    companion object {
+        @Provides
+        @Singleton
+        fun provideDriver() = DriverJiho()
+    }
+}
+```
+
+Specify required module in AppComponent.kt:
+```kotlin
+@Singleton
+@Component(modules=[DriverJihoModule::class])   //specify module
+interface AppComponent{
+    fun getDriver(): DriverJiho
+}
+```
+
+5) try it on MainActivity!
+
+MainActivity.kt:
+```kotlin
+   @Inject private lateinit var car1: Car
+   @Inject private lateinit var car2: Car
+   //...
+        val carComponent = DaggerCarComponent.builder()
+            .horsepower(200)
+            .torque(50)
+            .appComponent((application as BaseApplication).appComponent)    //driver injected here
+            .build()
+
+        carComponent.inject(this)
+
+        car1.drive()
+        car2.drive()
+```
+
+Check log output log:
+```
+D/: Driver[com.jonathan.practice.daggerpractice.DriverJiho@e06cc5e] is driving car[com.jonathan.practice.daggerpractice.car.Car@9ddd83f]
+    starting Petrol Engine with: hp=200, torque=50
+    Driver[com.jonathan.practice.daggerpractice.DriverJiho@e06cc5e] is driving car[com.jonathan.practice.daggerpractice.car.Car@b12750c]
+
+//..after screen rotation(Activity recreation)..
+
+    Driver[com.jonathan.practice.daggerpractice.DriverJiho@e06cc5e] is driving car[com.jonathan.practice.daggerpractice.car.Car@641df88]
+    starting Petrol Engine with: hp=200, torque=50
+    Driver[com.jonathan.practice.daggerpractice.DriverJiho@e06cc5e] is driving car[com.jonathan.practice.daggerpractice.car.Car@757cd21]
+```
+
+Here instance of `DriverJiho` is alive through whole application scope.
+`car1` and `car2` is recreated on par with activity.
+
 ## Furthermore..
 * If all the `@Provides` methods are static in `@Module` annotated class, make the class abstract - then Dagger won't compile if any methods are non-static.
 * Proguard will get rid of all the unnecessary codes created by Dagger when creating apk file.
 * For `@Singleton` to be effective, instances should be created from a single component.
+
+## Unresolved
+* For modules providing singleton instance, `@Binds` invoke cycle error - Why?
+-- Even after removing `getDriver()` from `AppComponent`..
