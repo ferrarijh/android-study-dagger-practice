@@ -19,16 +19,9 @@ interface CarComponent{
     fun getCar(): Car
     fun inject(activity: MainActivity)
 
-    @Subcomponent.Builder
-    interface Builder{
-        @BindsInstance
-        fun horsepower(@Named("hp") hp: Int): Builder
-
-        @BindsInstance
-        fun torque(@Named("torque") torque: Int): Builder
-
-        //fun appComponent(appComponent: AppComponent): Builder
-
-        fun build(): CarComponent
+    @Subcomponent.Factory
+    interface Factory{
+        fun create(@BindsInstance @Named("hp") hp: Int,
+            @BindsInstance @Named("torque") torque: Int): CarComponent
     }
 }

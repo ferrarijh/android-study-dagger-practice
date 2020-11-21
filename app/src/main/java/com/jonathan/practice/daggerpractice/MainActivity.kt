@@ -30,9 +30,6 @@ class MainActivity : AppCompatActivity() {
 //
 //        val car1 = component1.getCar()
 //        val car2 = component2.getCar()
-//
-//        car1.drive()
-//        car2.drive()
 
         /** test custom scopes and dependencies **/
 //        val carComponent = DaggerCarComponent.builder()
@@ -40,23 +37,22 @@ class MainActivity : AppCompatActivity() {
 //            .torque(50)
 //            .appComponent((application as BaseApplication).appComponent)    //driver injected here
 //            .build()
-//
-//        carComponent.inject(this)
-//
-//        car1.drive()
-//        car2.drive()
 
         /** test Subcomponent **/
 //        val carComponent = (application as BaseApplication).appComponent
 //            .getCarComponent(DieselEngineModule(200))
 
         /** test Subcomponent.Builder **/
+//        val carComponent = (application as BaseApplication).appComponent
+//            .getCarComponentBuilder()
+//            .horsepower(200)
+//            .torque(50)
+//            .build()
 
+        /** test Subcomponent.Factory **/
         val carComponent = (application as BaseApplication).appComponent
-            .getCarComponentBuilder()
-            .horsepower(200)
-            .torque(50)
-            .build()
+            .getCarComponentFactory()
+            .create(200, 50)
 
         carComponent.inject(this)
         car1.drive()

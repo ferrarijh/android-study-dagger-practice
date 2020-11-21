@@ -530,7 +530,7 @@ class DieselEngine @Inject constructor(private val horsepower: Int): Engine{
 ```
 
 ## @Subcomponent.Builder
-In `MainActivity` we'd like to do something like below to acquire `CarComponent` instance.
+Let's try builder pattern in `MainActivity` acquire `CarComponent` instance as below.
 
 MainActivity.kt:
 ```kotlin
@@ -541,7 +541,7 @@ val carComponent = (application as BaseApplication).appComponent
     .build()
 ```
 
-Let's use `PetrolEngineModule` here.
+We use `PetrolEngineModule` here.
 
 1) Modify `AppComponent`
 
@@ -581,6 +581,71 @@ interface CarComponent{
 ```
 
 We don't need `appComponent()` method since we now don't inject `AppComponent` to `CarComponent`.
+
+## @Subcomponent.Factory
+* Factory method is safer than Builder method as it invokes compile-time error for missing arguments while Builder method invokes runtime error on same circumstance.
+
+For example, with Builder method in MainActivity.kt:
+```kotlin
+val carComponent = (application as BaseApplication).appComponent
+    .getCarComponentBuilder()
+    .horsepower(200)
+    //.torque(50)   //oops - missing argument for 'torque'
+    .build()
+```
+if we don't pass necessary argument to for `Car` this will compile like everything's okay and later invoke runtime error complaining there's missing argument.
+
+To implement Factory method, 
+1) Modify `CarComponent`
+
+CarComponent.kt:
+```kotlin
+@MainActivityScope
+@Subcomponent(modlues=[WheelModule::class, PetrolEngineModule::class]) 
+interface CarComponent{
+    fun gerCar(): Car
+    fun inject(activity: MainActivity)
+    
+/*  replace this part with below @Subcomponent.Factory
+    @Subcomponent.Builder
+    interface Builder{
+        @BindsInstance
+        fun horsepower(@Named("hp") hp: Int): Builder
+
+        @BindsInstance
+        fun torque(@Named("torque") torque: Int): Builder
+
+        fun build(): CarComponent
+    }
+*/
+    @Subcomponent.Factory
+    interface Factory{
+        fun create(@BindsInstance @Named("hp") hp: Int,
+            @BindsInstance @Named("torque") torque: Int): CarComponent
+    }
+}
+```
+
+2) Modify `AppComponent`
+
+AppComponent.kt:
+```kotlin
+@Singleton
+@Component(modules=[DriverJiho::class])
+interface AppComponent{
+    //fun getCarComponentBuilder(): CarComponent.Builder    //replace this line with below line
+    fun getCarComponentFactory(): CarComponent.Factory
+}
+```
+
+Now acquire `carComponent` with Factory method in `MainActivity`.
+
+MainActivity.kt:
+```kotlin
+val carComponent = (application as BaseApplication).appComponent()
+    .getCarComponentFactory()
+    .create(200, 50)
+```
 
 ## Furthermore..
 * If all the `@Provides` methods are static in `@Module` annotated class, make the class abstract - then Dagger won't compile if any methods are non-static.

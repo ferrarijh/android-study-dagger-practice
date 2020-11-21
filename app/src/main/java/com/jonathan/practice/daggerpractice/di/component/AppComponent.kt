@@ -9,6 +9,5 @@ import javax.inject.Singleton
 @Singleton
 @Component(modules=[DriverJihoModule::class])
 interface AppComponent{
-    //fun getCarComponent(dem: DieselEngineModule): CarComponent
-    fun getCarComponentBuilder(): CarComponent.Builder
+    fun getCarComponentFactory(): CarComponent.Factory
 }
