@@ -444,6 +444,144 @@ D/: Driver[com.jonathan.practice.daggerpractice.DriverJiho@e06cc5e] is driving c
 Here instance of `DriverJiho` is alive through whole application scope.
 `car1` and `car2` is recreated on par with activity.
 
+## @Subcomponent
+* Instead of setting `dependencies` attribute, `@Subcomponent` can be set to connect two components.
+* Subcomponent can access the whole dependency graph of parent component.
+
+In the example we'll change `CarComponent` to `AppComponent`'s Subcomponent.
+`CarComponent` will now be accessed through `AppComponent`.
+After going through the example we'll acquire `CarComponent` instance like below.
+
+In MainActivity.kt:
+```kotlin
+val carComponent: CarComponent = (application as BaseApplication).getAppComponent()
+    .getActivityComponent(DieselEngineModule(200))  //Assuming DieselEngineModule is not abstract and has no default constructor
+```
+
+To do the above follow the steps below.
+
+1) Modify `CarComponent` to Subcomponent from Component.
+
+Subcomponent does not have `dependencies` attribute so remove it.
+Change `Builder`'s annotation to `@Subcomponent.Builder`.
+From now on `AppComponent` is not injected to `CarComponent` directly.
+
+CarComponent.kt:
+```kotlin
+@MainActivityScope
+@Subcomponent(modlues=[WheelModule::class, DieselEngineModule::class])  //remove 'dependencies=[AppComponent::class]'
+interface CarComponent{
+    fun gerCar(): Car
+    fun inject(activity: MainActivity)
+    
+/* we'll define @Subcomponent.Builder in next section
+    @Component.Builder
+    interface Builder{
+        @BindsInstance
+        fun horsepower(@Named("hp") hp: Int): Builder
+
+        @BindsInstance
+        fun torque(@Named("torque") torque: Int): Builder
+
+        fun appComponent(appComponent: AppComponent): Builder
+
+        fun build(): CarComponent
+    }
+*/
+}
+```
+
+
+2) Replace `getDriver()` with `getCarComponent()` in `AppComponent`
+
+`getCarComponent()` method needs all the modules that is not abstract and lack default constructor in `CarComponent`.
+Here `DieselEngineModule` is the case but not `WheelModule`.
+
+AppComponent.kt:
+```kotlin
+@Singleton
+@Component(modules=[DriverJihoModule::class])
+interface AppComponent{
+    //fun getDriver(): Driver
+    fun getCarComponent(dieselEngineModule: DieselEngineModule): CarComponent
+}
+```
+
+(FYI) DieselEngineModule.kt:
+```kotlin
+@Module
+class DieselEngineModule(private val horsepower: Int){
+
+    @Provides
+    fun provideEngine(de: DieselEngine): Engine = de
+
+    @Provides
+    fun provideHorsepower(): Int = horsepower
+}
+```
+
+(FYI) DieselEngine.kt:
+```kotlin
+class DieselEngine @Inject constructor(private val horsepower: Int): Engine{
+    override fun start() {
+        Log.d("", "Starting Diesel Engine - hp[$horsepower]")
+    }
+}
+```
+
+## @Subcomponent.Builder
+In `MainActivity` we'd like to do something like below to acquire `CarComponent` instance.
+
+MainActivity.kt:
+```kotlin
+val carComponent = (application as BaseApplication).appComponent
+    .getCarComponentBuilder()   //modify AppComponent for this line
+    .horsepower(200)
+    .torque(50)
+    .build()
+```
+
+Let's use `PetrolEngineModule` here.
+
+1) Modify `AppComponent`
+
+AppComponent.kt:
+```kotlin
+@Singleton
+@Component(modules=[DriverJiho::class])
+interface AppComponent{
+    //fun getCarComponent(dem: DieselEngineModule): CarComponent    //remove this line
+    fun getCarComponentBuilder(): CarComponent.Builder
+}
+```
+
+2) Modify `CarComponent`
+
+CarComponent.kt:
+```kotlin
+@MainActivityScope
+@Subcomponent(modlues=[WheelModule::class, PetrolEngineModule::class]) 
+interface CarComponent{
+    fun gerCar(): Car
+    fun inject(activity: MainActivity)
+    
+    @Subcomponent.Builder   //changed to @Subcomponent.Builder
+    interface Builder{
+        @BindsInstance
+        fun horsepower(@Named("hp") hp: Int): Builder
+
+        @BindsInstance
+        fun torque(@Named("torque") torque: Int): Builder
+
+        //fun appComponent(appComponent: AppComponent): Builder     //remove this line
+
+        fun build(): CarComponent
+    }
+}
+```
+
+We don't need `appComponent()` method since we now don't inject `AppComponent` to `CarComponent`.
+
 ## Furthermore..
 * If all the `@Provides` methods are static in `@Module` annotated class, make the class abstract - then Dagger won't compile if any methods are non-static.
 * Proguard will get rid of all the unnecessary codes created by Dagger when creating apk file.

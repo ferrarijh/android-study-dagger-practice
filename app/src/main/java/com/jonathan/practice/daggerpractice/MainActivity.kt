@@ -4,7 +4,8 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.jonathan.practice.daggerpractice.application.BaseApplication
 import com.jonathan.practice.daggerpractice.car.Car
-import com.jonathan.practice.daggerpractice.di.component.DaggerCarComponent
+import com.jonathan.practice.daggerpractice.di.component.DaggerAppComponent
+import com.jonathan.practice.daggerpractice.di.module.DieselEngineModule
 import javax.inject.Inject
 
 class MainActivity : AppCompatActivity() {
@@ -34,16 +35,33 @@ class MainActivity : AppCompatActivity() {
 //        car2.drive()
 
         /** test custom scopes and dependencies **/
-        val carComponent = DaggerCarComponent.builder()
+//        val carComponent = DaggerCarComponent.builder()
+//            .horsepower(200)
+//            .torque(50)
+//            .appComponent((application as BaseApplication).appComponent)    //driver injected here
+//            .build()
+//
+//        carComponent.inject(this)
+//
+//        car1.drive()
+//        car2.drive()
+
+        /** test Subcomponent **/
+//        val carComponent = (application as BaseApplication).appComponent
+//            .getCarComponent(DieselEngineModule(200))
+
+        /** test Subcomponent.Builder **/
+
+        val carComponent = (application as BaseApplication).appComponent
+            .getCarComponentBuilder()
             .horsepower(200)
             .torque(50)
-            .appComponent((application as BaseApplication).appComponent)    //driver injected here
             .build()
 
         carComponent.inject(this)
-
         car1.drive()
         car2.drive()
+
 
     }
 }

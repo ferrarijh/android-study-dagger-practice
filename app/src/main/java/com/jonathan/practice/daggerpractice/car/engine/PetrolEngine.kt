@@ -9,6 +9,6 @@ class PetrolEngine @Inject constructor(
     @Named("torque") private val torque: Int
 ) : Engine{
     override fun start() {
-        Log.d("", "starting Petrol Engine with: hp=$horsepower, torque=$torque")
+        Log.d("", "Starting Petrol Engine - hp[$horsepower], torque[$torque]")
     }
 }

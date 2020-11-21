@@ -7,10 +7,11 @@ import dagger.Module
 import dagger.Provides
 
 @Module
-abstract class DieselEngineModule{
+class DieselEngineModule(private val horsepower: Int){
 
-    companion object{
-        @Provides
-        fun bindEngine(de: DieselEngine) = DieselEngine()
-    }
+    @Provides
+    fun provideEngine(de: DieselEngine): Engine = de
+
+    @Provides
+    fun provideHorsepower(): Int = horsepower
 }
