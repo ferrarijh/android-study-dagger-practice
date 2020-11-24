@@ -20,10 +20,13 @@ val car = component.getCar()
 ## Field Injection
 * Instantiate field(property)
 * Useful when you have multiple fields to instantiate.
- 
+
+MainActivity.kt:
 ```kotlin
-//in MainActivity
-@Inject lateinit var mCar: Car  //fields should NOT be private
+class MainActivity: AppCompatActivity(){
+    @Inject lateinit var mCar: Car  //fields should NOT be private
+    //...
+}
 ```
 
 Add `inject()` method to `CarComponent` as below.
