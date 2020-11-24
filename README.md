@@ -1,7 +1,8 @@
 # Android Dagger Practice
 * 3 types of injections - Constructor/Method(setter)/Field Injection
-* class `Car` depends on `Engine` and `Wheel`.
-* Interface `CarComponent` will be implemented to class `DaggerCarComponent` automatically by Dagger.
+
+In the example, class `Car` depends on `Engine` and `Wheel`.
+Interface `CarComponent` will be implemented to class `DaggerCarComponent` automatically by Dagger.
 
 ```kotlin
 @Component
